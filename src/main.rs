@@ -3,12 +3,13 @@
 #[macro_use]
 extern crate error_chain;
 
+#[macro_use]
+extern crate log;
+
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-
-use clap;
 
 mod errors {
     error_chain! {
@@ -22,14 +23,14 @@ mod errors {
 use crate::errors::*;
 
 fn build_custom_log(
-    dp_shell_history: &Path,
-    fp_results: &Path,
-    daterange: (Option<&str>, Option<&str>),
-    username: Option<&str>,
-    wdir: Option<&Path>,
-    hostname: Option<&str>,
-    regexp: Option<&str>,
-    unique: bool,
+    _dp_shell_history: &Path,
+    _fp_results: &Path,
+    _daterange: (Option<&str>, Option<&str>),
+    _username: Option<&str>,
+    _wdir: Option<&Path>,
+    _hostname: Option<&str>,
+    _regexp: Option<&str>,
+    _unique: bool,
 ) {
 
 }
@@ -52,12 +53,6 @@ where
                 .multiple(true)
                 .takes_value(true)
                 .help("Filter logs by using a daterange."),
-        )
-        .arg(
-            Arg::with_name("debug")
-                .short("d")
-                .long("debug")
-                .help("Enable debug mode."),
         )
         .arg(
             Arg::with_name("hostname")
@@ -119,11 +114,7 @@ where
 fn test_parse_cli_args() {
     let mut args;
 
-    args = parse_cli_args(vec!["vshlog", "-d"]);
-    assert!(args.is_present("debug"));
-
     args = parse_cli_args(vec!["vshlog", "-vv"]);
-    assert!(!args.is_present("debug"));
     assert_eq!(args.occurrences_of("verbose"), 2);
 
     args = parse_cli_args(vec!["vshlog", "-D", "BOT", "EOT"]);
@@ -146,6 +137,21 @@ fn test_parse_cli_args() {
 
 fn main() -> Result<()> {
     let args = parse_cli_args(std::env::args());
+
+    let log_level = match args.occurrences_of("verbose") {
+        0 => "info",
+        1 => "debug",
+        _ => "trace",
+    };
+
+    std::env::set_var("RUST_LOG", log_level);
+
+    env_logger::init();
+    match log_level {
+        "debug" => debug!("Debug mode is enabled."),
+        "trace" => trace!("Trace mode is enabled."),
+        _ => (),
+    }
 
     let fp_results = Path::new("/tmp/vshlog/vshlog.log");
     let dp_results = fp_results.parent().unwrap();
@@ -195,6 +201,7 @@ fn main() -> Result<()> {
         "The file {:?} does not exist!",
         fp_results
     );
+
     if args.value_of("view_report").unwrap() == "y" {
         Command::new("vim")
             .arg("+")

@@ -26,6 +26,7 @@ mod errors {
             Io(std::io::Error);
             FromUtf8(std::string::FromUtf8Error);
             ParseInt(std::num::ParseIntError);
+            Regex(regex::Error);
             Var(std::env::VarError);
         }
     }
@@ -474,16 +475,21 @@ fn test_parse_cli_date() {
 
 
 fn init_logger(verbose_count: u8) {
-    let log_level = match verbose_count {
-        0 => "info",
-        1 => "debug",
-        _ => "trace",
+    let log_level = if let Ok(level) = std::env::var("RUST_LOG") {
+        level
+    } else {
+        let cli_level = match verbose_count {
+            0 => "info",
+            1 => "debug",
+            _ => "trace",
+        };
+
+        std::env::set_var("RUST_LOG", cli_level);
+        cli_level.to_string()
     };
 
-    std::env::set_var("RUST_LOG", log_level);
-
     env_logger::init();
-    match log_level {
+    match log_level.as_ref() {
         "debug" => debug!("Debug mode is enabled."),
         "trace" => trace!("Trace mode is enabled."),
         _ => (),
@@ -601,10 +607,8 @@ fn main() -> Result<()> {
     fs::create_dir_all(dp_results)?;
 
     let dp_shell_history = {
-        let home = std::env::var("HOME")?;
-        let shell_history_dir =
-            format!("{}/Dropbox/var/logs/shell-history", home);
-        PathBuf::from(&shell_history_dir)
+        let shell_history_root = std::env::var("VSHLOG_SHELL_HISTORY_ROOT")?;
+        PathBuf::from(&shell_history_root)
     };
 
     assert!(
@@ -645,11 +649,13 @@ fn main() -> Result<()> {
         gethostname().into_string().unwrap()
     };
 
-    let regexp = if let Some(re) = args.value_of("regexp") {
+    let regexp_str = if let Some(re) = args.value_of("regexp") {
         re
     } else {
         ".*"
     };
+
+    let regexp = Regex::new(regexp_str).expect("bad regular expession pattern");
 
     build_custom_log(
         &dp_shell_history,
@@ -658,7 +664,7 @@ fn main() -> Result<()> {
         args.value_of("username"),
         wdir,
         hostname,
-        Regex::new(regexp).unwrap(),
+        regexp,
         args.is_present("unique"),
     )
     .expect("failed to build vshlog.log");
@@ -670,11 +676,23 @@ fn main() -> Result<()> {
     );
 
     if args.value_of("view_report").unwrap() == "y" {
-        Command::new("vim")
-            .arg("+")
+        let editor = match std::env::var("EDITOR") {
+            Ok(val) => val,
+            Err(_) => "vim".to_string(),
+        };
+
+        let mut base_editor_cmd = Command::new(&editor);
+
+        let editor_cmd = if Regex::new("vim")?.is_match(&editor) {
+            base_editor_cmd.arg("+")
+        } else {
+            &mut base_editor_cmd
+        };
+
+        editor_cmd
             .arg(fp_results)
             .status()
-            .expect("vim command failed");
+            .expect(&format!("{} command failed", editor));
     }
 
     fs::remove_file(fp_results)?;

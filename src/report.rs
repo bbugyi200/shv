@@ -10,6 +10,7 @@ use regex::Regex;
 use crate::datetime;
 use crate::errors::*;
 
+
 fn process_logfile(
     fp_log: &Path,
     (date_start, date_end, tz): (Date<FixedOffset>, Date<FixedOffset>, &str),
@@ -111,12 +112,20 @@ fn test_get_hostname_paths() {
 // at once, in parallel.
 fn merge_hosts(
     dp_shell_history: &Path,
-    year: u16,
-    month: u8,
+    hostname_paths: &Vec<Box<PathBuf>>,
+    (year, this_year): (i32, i32),
+    (month, this_month): (u32, u32),
 ) -> Result<PathBuf> {
-    assert!(dp_shell_history.is_dir());
+    let fp_log = PathBuf::from(
+        dp_shell_history.join(&format!("ALL/{}/{}.log", year, month)),
+    );
 
-    let hostname_paths = get_hostname_paths(&dp_shell_history)?;
+    let is_current_log = (year == this_year) && (month == this_month);
+
+    if fp_log.exists() && !is_current_log {
+        return Ok(fp_log);
+    }
+
     let mut all_log_paths = Vec::new();
     for hpath in hostname_paths {
         let relative_log_path = format!("{}/{:02}.log", year, month);
@@ -125,9 +134,6 @@ fn merge_hosts(
             all_log_paths.push(absolute_log_path);
         }
     }
-
-    let fp_log =
-        PathBuf::from(&format!("/tmp/vshlog/{}/{:02}.log", year, month));
 
     if all_log_paths.len() > 0 {
         let dp_parent = fp_log.parent().unwrap();
@@ -181,13 +187,20 @@ pub fn build(
     let mut date = date_start.clone();
     let mut entry_count = 0;
 
+    let hostname_paths = get_hostname_paths(&dp_shell_history)?;
+    let (this_year, this_month) = {
+        let today = datetime::get_today(&tz);
+        (today.year(), today.month())
+    };
+
     let mut command_registry = HashSet::new();
     while date_ym_value(date) <= date_ym_value(date_end) {
         let fp_log = if hostname.to_lowercase() == "all" {
             merge_hosts(
-                &dp_shell_history,
-                date.year() as u16,
-                date.month() as u8,
+                dp_shell_history,
+                &hostname_paths,
+                (date.year(), this_year),
+                (date.month(), this_month),
             )?
         } else {
             let relative_log_path =
@@ -196,17 +209,17 @@ pub fn build(
             PathBuf::from(&absolute_log_path)
         };
 
-        let check_date = {
-            let is_start_month = (date.year() == date_start.year())
-                && (date.month() == date_start.month());
-
-            let is_end_month = (date.year() == date_end.year())
-                && (date.month() == date_end.month());
-
-            is_start_month || is_end_month
-        };
-
         if fp_log.exists() {
+            let check_date = {
+                let is_start_month = (date.year() == date_start.year())
+                    && (date.month() == date_start.month());
+
+                let is_end_month = (date.year() == date_end.year())
+                    && (date.month() == date_end.month());
+
+                is_start_month || is_end_month
+            };
+
             let log_lines = process_logfile(
                 &fp_log,
                 (date_start, date_end, tz),

@@ -1,9 +1,10 @@
 use chrono::prelude::*;
 use chrono::Duration;
-use super::errors::*;
 
 use std::process::Command;
 use regex::Regex;
+
+use crate::errors::*;
 
 
 pub fn days_in_month(month: u32, year: i32) -> Duration {
@@ -29,7 +30,7 @@ pub fn days_in_month(month: u32, year: i32) -> Duration {
 }
 
 
-fn get_today(tz: &str) -> Date<FixedOffset> {
+pub fn get_today(tz: &str) -> Date<FixedOffset> {
     let utc_time = Utc::now();
     let tz_offset = get_timezone_offset(tz).unwrap();
     let east_tz = FixedOffset::east(tz_offset * 3600);
@@ -166,16 +167,16 @@ fn test_parse_cli_date() {
     let tz = "-0400";
     let today = get_today(tz);
 
-    let mut assert_ymd = |dts, y, m, d| {
+    let assert_ymd = |dts, y, m, d| {
         let date = match parse_cli_date(dts, tz) {
             Ok(d) => d,
             Err(e) => panic!("[{}]: {:?}", dts, e),
         };
 
-        let emsg = |T, actual, expected| {
+        let emsg = |t, actual, expected| {
             String::from(format!(
                 "{}: {}[actual({}) != expected({})]",
-                dts, T, actual, expected
+                dts, t, actual, expected
             ))
         };
 

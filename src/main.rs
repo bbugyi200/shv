@@ -31,7 +31,7 @@ mod errors {
 use crate::errors::*;
 
 mod datetime;
-mod report;
+mod shr;
 
 
 fn init_logger(verbose_count: u8) {
@@ -221,7 +221,7 @@ where
 
     let regexp = Regex::new(regexp_str).expect("bad regular expession pattern");
 
-    report::build(
+    shr::build(
         &dp_shell_history,
         &fp_results,
         (date_start, date_end, &tz),

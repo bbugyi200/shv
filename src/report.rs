@@ -163,7 +163,7 @@ fn merge_hosts(
 }
 
 
-/// Creates and fills /tmp/vshlog/vshlog.log.
+/// Creates and fills /tmp/shv/shv.log.
 pub fn build(
     dp_shell_history: &Path,
     fp_results: &Path,
@@ -174,7 +174,7 @@ pub fn build(
     regexp: Regex,
     unique: bool,
 ) -> Result<()> {
-    fs::File::create(fp_results)?.write_all(b"# vim: filetype=vshlog\n\n")?;
+    fs::File::create(fp_results)?.write_all(b"# vim: filetype=shv\n\n")?;
 
     fn date_ym_value(date: Date<FixedOffset>) -> u32 {
         ((date.year() * 100) as u32) + (date.month() as u32)
@@ -240,7 +240,7 @@ pub fn build(
 
     write!(
         &mut f_results,
-        "# Number of shell commands matched by vshlog query:  {}",
+        "# Number of shell commands matched by shv query:  {}",
         entry_count,
     )?;
 

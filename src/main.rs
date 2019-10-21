@@ -64,7 +64,7 @@ where
 {
     use clap::{App, Arg};
 
-    App::new("vshlog")
+    App::new("shv")
         .version("0.1.0")
         .author("Bryan Bugyi <bryanbugyi34@gmail.com>")
         .about("View your shell history with vim.")
@@ -135,23 +135,23 @@ where
 fn test_parse_cli_args() {
     let mut args;
 
-    args = parse_cli_args(vec!["vshlog", "-vv"]);
+    args = parse_cli_args(vec!["shv", "-vv"]);
     assert_eq!(args.occurrences_of("verbose"), 2);
 
-    args = parse_cli_args(vec!["vshlog", "-D", "BOT", "EOT"]);
+    args = parse_cli_args(vec!["shv", "-D", "BOT", "EOT"]);
     let mut values = args.values_of("daterange").unwrap();
     assert_eq!(values.next(), Some("BOT"));
     assert_eq!(values.next(), Some("EOT"));
     assert_eq!(values.next(), None);
 
-    args = parse_cli_args(vec!["vshlog", "-e", "^pig$"]);
+    args = parse_cli_args(vec!["shv", "-e", "^pig$"]);
     assert_eq!(args.value_of("regexp").unwrap(), "^pig$");
     assert_eq!(args.value_of("view_report").unwrap(), "y");
 
-    args = parse_cli_args(vec!["vshlog", "--view-report", "n"]);
+    args = parse_cli_args(vec!["shv", "--view-report", "n"]);
     assert_eq!(args.value_of("view_report").unwrap(), "n");
 
-    args = parse_cli_args(vec!["vshlog", "-w", "/home/bryan"]);
+    args = parse_cli_args(vec!["shv", "-w", "/home/bryan"]);
     assert_eq!(args.value_of("wdir").unwrap(), "/home/bryan");
     assert_eq!(args.value_of("regexp"), None);
 }
@@ -165,13 +165,13 @@ where
     let args = parse_cli_args(argv);
     init_logger(args.occurrences_of("verbose") as u8);
 
-    let fp_results = Path::new("/tmp/vshlog/vshlog.log");
+    let fp_results = Path::new("/tmp/shv/shv.log");
     let dp_results = fp_results.parent().unwrap();
 
     fs::create_dir_all(dp_results)?;
 
     let dp_shell_history = {
-        let shell_history_root = std::env::var("VSHLOG_SHELL_HISTORY_ROOT")?;
+        let shell_history_root = std::env::var("SHV_SHELL_HISTORY_ROOT")?;
         PathBuf::from(&shell_history_root)
     };
 
@@ -231,7 +231,7 @@ where
         regexp,
         args.is_present("unique"),
     )
-    .expect("failed to build vshlog.log");
+    .expect("failed to build shv.log");
 
     assert!(
         fp_results.exists(),

@@ -1,4 +1,4 @@
+benchmark
 /target
 **/*.rs.bk
-profile
 perf.*

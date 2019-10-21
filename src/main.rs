@@ -157,8 +157,12 @@ fn test_parse_cli_args() {
 }
 
 
-fn main() -> Result<()> {
-    let args = parse_cli_args(std::env::args());
+fn run<I, T>(argv: I) -> Result<()>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+{
+    let args = parse_cli_args(argv);
     init_logger(args.occurrences_of("verbose") as u8);
 
     let fp_results = Path::new("/tmp/vshlog/vshlog.log");
@@ -257,3 +261,6 @@ fn main() -> Result<()> {
 
     Ok(())
 }
+
+
+fn main() -> Result<()> { run(std::env::args()) }

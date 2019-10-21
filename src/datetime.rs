@@ -1,8 +1,8 @@
 use chrono::prelude::*;
 use chrono::Duration;
 
-use std::process::Command;
 use regex::Regex;
+use std::process::Command;
 
 use crate::errors::*;
 
@@ -83,7 +83,11 @@ pub fn parse_datetime(
     Ok(datetime)
 }
 
-pub fn parse_date(dts: &str, dt_fmt: &str, tz: &str) -> Result<Date<FixedOffset>> {
+pub fn parse_date(
+    dts: &str,
+    dt_fmt: &str,
+    tz: &str,
+) -> Result<Date<FixedOffset>> {
     Ok(parse_datetime(dts, dt_fmt, tz)?.date())
 }
 

@@ -108,8 +108,6 @@ fn test_get_hostname_paths() {
 }
 
 
-// TODO(bugyi): Look into how you can use Rayon to create all merged log files
-// at once, in parallel.
 fn merge_hosts(
     dp_shell_history: &Path,
     hostname_paths: &Vec<Box<PathBuf>>,

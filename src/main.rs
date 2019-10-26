@@ -82,19 +82,15 @@ where
                 .takes_value(true)
                 .help("Filter logs by the machine's hostname."),
         )
-        // TODO(bugyi): Regexp should be positional.
         .arg(
             Arg::with_name("regexp")
-                .short("e")
-                .long("regexp")
                 .takes_value(true)
                 .help(
                     "Filter logs by command string using a regular expression",
                 ),
         )
-        .arg(Arg::with_name("unique").short("u").long("unique").help(
-            "Filter out duplicate entries where two entries are considered to \
-             be duplicats if their command strings are the same.",
+        .arg(Arg::with_name("not_unique").short("a").long("all").help(
+            "Report all matching commands, including duplicates.",
         ))
         .arg(
             Arg::with_name("username")
@@ -144,7 +140,7 @@ fn test_parse_cli_args() {
     assert_eq!(values.next(), Some("EOT"));
     assert_eq!(values.next(), None);
 
-    args = parse_cli_args(vec!["shv", "-e", "^pig$"]);
+    args = parse_cli_args(vec!["shv", "^pig$"]);
     assert_eq!(args.value_of("regexp").unwrap(), "^pig$");
     assert_eq!(args.value_of("view_report").unwrap(), "y");
 
@@ -229,7 +225,7 @@ where
         wdir,
         &hostname,
         regexp,
-        args.is_present("unique"),
+        !args.is_present("not_unique"),
     )
     .expect("failed to build shv.log");
 

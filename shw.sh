@@ -17,5 +17,11 @@ if [[ -z "$1" ]]; then
     exit 2
 fi
 
-CMD="$(echo "$1" | sed -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g')"; shift
+if [[ "$(uname -a)" == *"Darwin"* ]]; then
+    SED="gsed"
+else
+    SED="sed"
+fi
+
+CMD="$(echo "$1" | "${SED}" -E ':a;N;$!ba;s/\r{0,1}\n/\\n/g')"; shift
 printf "%s:%s:%s:%s:%s\n" "$HOSTNAME" "$(whoami)" "$(date '+%Y%m%d%H%M%S')" "$(pwd)" "$CMD" >> "$LOGFILE";

@@ -26,12 +26,16 @@ fn process_logfile(
     let reader = std::io::BufReader::new(f_log);
 
     let mut matched_lines = Vec::new();
+
+    let mut i = 0; // Tracks line number.
     for line in reader.lines() {
+        i += 1;
+
         let line = line?;
         let v: Vec<_> = line.trim().splitn(5, ':').collect();
 
         if v.len() != 5 {
-            warn!("Log line has bad format: {:?}", v);
+            warn!("({:?}:{}) Log line has bad format => {:?}", fp_log, i, v);
             continue;
         }
 
@@ -117,7 +121,7 @@ fn merge_hosts(
     (month, this_month): (u32, u32),
 ) -> Result<PathBuf> {
     let fp_log = PathBuf::from(
-        dp_shell_history.join(&format!("ALL/{}/{}.log", year, month)),
+        dp_shell_history.join(&format!("ALL/{}/{:02}.log", year, month)),
     );
 
     let is_current_log = (year == this_year) && (month == this_month);

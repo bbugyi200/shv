@@ -1,4 +1,4 @@
-//! View your shell history with vim.
+//! (S)hell (H)istory (V)iewer
 
 #[macro_use]
 extern crate error_chain;
@@ -66,35 +66,55 @@ where
     App::new("shv")
         .version("0.1.0")
         .author("Bryan Bugyi <bryanbugyi34@gmail.com>")
-        .about("View your shell history with vim.")
+        .about("(S)hell (H)istory (V)iewer")
+        // ----- Positional Arguments
+        .arg(
+            Arg::with_name("regexp").takes_value(true).help(
+                "Filter logs by command string using a regular expression",
+            ),
+        )
+        // ----- Optional Arguments
+        .arg(
+            Arg::with_name("all")
+                .short("a")
+                .long("all")
+                .help("Report all matching commands, including duplicates."),
+        )
         .arg(
             Arg::with_name("daterange")
                 .short("D")
                 .long("daterange")
-                .multiple(true)
                 .takes_value(true)
-                .help("Filter logs by using a daterange."),
+                .max_values(2)
+                .require_delimiter(true)
+                .value_delimiter(":")
+                .help(
+                    "Filter logs by using a daterange of the form \
+                     START[:END]. Defaults to parsing all logs. If only the \
+                     START date is given, the end range is automatically set \
+                     to \"EOT\" (now). Accepts dates of the form YYYY-MM-DD, \
+                     YYYY-MM, YYYY, MM-DD, MM, and the special values \"BOT\" \
+                     and \"EOT\". Lastly, this option will also accept \
+                     arguments of the form: \"Nd\", \"Nw\", \"Nm\" or  \
+                     \"Ny\". These are interpreted as datetimes corresponding \
+                     to N days/weeks/months/years ago.",
+                ),
         )
         .arg(
             Arg::with_name("hostname")
                 .short("H")
                 .long("hostname")
                 .takes_value(true)
-                .help("Filter logs by the machine's hostname."),
-        )
-        .arg(
-            Arg::with_name("regexp")
-                .takes_value(true)
                 .help(
-                    "Filter logs by command string using a regular expression",
+                    "Filter logs by the machine's hostname. Defaults to \
+                     hostname of current machine. Accepts special \"ALL\" \
+                     value which results in logs from all known hostnames \
+                     being processed.",
                 ),
         )
-        .arg(Arg::with_name("not_unique").short("a").long("all").help(
-            "Report all matching commands, including duplicates.",
-        ))
         .arg(
             Arg::with_name("username")
-                .short("U")
+                .short("u")
                 .long("username")
                 .help("Filter logs by username."),
         )
@@ -134,7 +154,7 @@ fn test_parse_cli_args() {
     args = parse_cli_args(vec!["shv", "-vv"]);
     assert_eq!(args.occurrences_of("verbose"), 2);
 
-    args = parse_cli_args(vec!["shv", "-D", "BOT", "EOT"]);
+    args = parse_cli_args(vec!["shv", "-D", "BOT:EOT"]);
     let mut values = args.values_of("daterange").unwrap();
     assert_eq!(values.next(), Some("BOT"));
     assert_eq!(values.next(), Some("EOT"));
@@ -225,7 +245,7 @@ where
         wdir,
         &hostname,
         regexp,
-        !args.is_present("not_unique"),
+        !args.is_present("all"),
     )
     .expect("failed to build shv.log");
 

@@ -139,7 +139,7 @@ pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
             fmt_result = format!("{}-01-01", yyyy);
             &fmt_result
         }
-        relative_date if is_match("^[1-9][0-9]*(D|M|Y)$", relative_date) => {
+        relative_date if is_match("^[1-9][0-9]*(D|M|W|Y)$", relative_date) => {
             let mut n_string = relative_date.to_string();
             let ch = n_string.pop();
             let n: i64 = n_string.parse().unwrap();
@@ -151,6 +151,12 @@ pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
                     for _ in 0..n {
                         rel_date = rel_date
                             - days_in_month(rel_date.month(), rel_date.year());
+                    }
+                    rel_date
+                }
+                Some('W') => {
+                    for _ in 0..n {
+                        rel_date = rel_date - Duration::days(7);
                     }
                     rel_date
                 }
@@ -225,6 +231,7 @@ fn test_parse_cli_date() {
     assert_relative("15d");
     assert_relative("3m");
     assert_relative("12m");
+    assert_relative("3w");
     assert_relative("2y");
     assert_relative("10y");
 }

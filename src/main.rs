@@ -12,7 +12,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use gethostname::gethostname;
 use regex::Regex;
 
 
@@ -83,6 +82,7 @@ where
                 .takes_value(true)
                 .help("Filter logs by the machine's hostname."),
         )
+        // TODO(bugyi): Regexp should be positional.
         .arg(
             Arg::with_name("regexp")
                 .short("e")
@@ -210,7 +210,7 @@ where
     let hostname = if let Some(hn) = args.value_of("hostname") {
         hn.to_string()
     } else {
-        gethostname().into_string().unwrap()
+        "ALL".to_string()
     };
 
     let regexp_str = if let Some(re) = args.value_of("regexp") {
@@ -223,11 +223,11 @@ where
 
     shr::build(
         &dp_shell_history,
-        &fp_results,
+        fp_results,
         (date_start, date_end, &tz),
         args.value_of("username"),
         wdir,
-        hostname,
+        &hostname,
         regexp,
         args.is_present("unique"),
     )

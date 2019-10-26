@@ -108,12 +108,16 @@ fn test_parse_date() {
 pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
     let date_spec = date_spec.to_uppercase();
     let today = get_today(tz);
+
     let is_match = |pttrn, expr| Regex::new(pttrn).unwrap().is_match(expr);
-    let dts: std::borrow::Cow<str> = match date_spec.as_ref() {
-        "BOT" => "2017-01-01".into(),
+
+    let fmt_result;
+    let dts = match date_spec.as_ref() {
+        "BOT" => "2017-01-01",
         "EOT" => return Ok(today),
         mmdd if is_match("^[0-9][0-9]?-[0-9][0-9]?$", mmdd) => {
-            format!("{}-{}", today.year(), mmdd).into()
+            fmt_result = format!("{}-{}", today.year(), mmdd);
+            &fmt_result
         }
         yyyymmdd
             if is_match(
@@ -121,16 +125,19 @@ pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
                 yyyymmdd,
             ) =>
         {
-            yyyymmdd.into()
+            yyyymmdd
         }
         yyyymm if is_match("^[2-9][0-9]{3}-[0-9][0-9]?$", yyyymm) => {
-            format!("{}-01", yyyymm).into()
+            fmt_result = format!("{}-01", yyyymm);
+            &fmt_result
         }
         mm if is_match("^[0-9][0-9]?$", mm) => {
-            format!("{}-{}-01", today.year(), mm).into()
+            fmt_result = format!("{}-{}-01", today.year(), mm);
+            &fmt_result
         }
         yyyy if is_match("^[2-9][0-9]{3}$", yyyy) => {
-            format!("{}-01-01", yyyy).into()
+            fmt_result = format!("{}-01-01", yyyy);
+            &fmt_result
         }
         relative_date if is_match("^[1-9][0-9]*(D|M|Y)$", relative_date) => {
             let mut n_string = relative_date.to_string();

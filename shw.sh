@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ###################################################
-#  Logging Script used for Eternal Shell History  #
+#  (S)hell (H)istory (W)riter                     #
 #                                                 #
-#  Is hooked into ZSH shell using special         #
+#  Is hooked into zsh/bash shell using special    #
 #  'preexec' function.                            #
 ###################################################
 

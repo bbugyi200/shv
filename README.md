@@ -9,7 +9,7 @@ Run the following commands to install `shv` from source:
 ```
 git clone https://github.com/bbugyi200/shv
 cd shv
-cargo built --release
+cargo build --release
 cp target/release/shv shw.sh ~/.cargo/bin/
 ```
 Then add the following line to your `.zshrc` (or `.bashrc` if you have [bash-preexec](https://github.com/rcaloras/bash-preexec) installed):

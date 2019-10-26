@@ -1,3 +1,5 @@
+//! (S)hell (H)istory (R)eader
+
 use std::collections::HashSet;
 use std::fs;
 use std::io::prelude::*;
@@ -170,7 +172,7 @@ pub fn build(
     (date_start, date_end, tz): (Date<FixedOffset>, Date<FixedOffset>, &str),
     username: Option<&str>,
     wdir: Option<&Path>,
-    hostname: String,
+    hostname: &str,
     regexp: Regex,
     unique: bool,
 ) -> Result<()> {

@@ -116,6 +116,7 @@ where
             Arg::with_name("username")
                 .short("u")
                 .long("username")
+                .takes_value(true)
                 .help("Filter logs by username."),
         )
         .arg(

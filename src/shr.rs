@@ -169,7 +169,7 @@ fn merge_hosts(
 }
 
 
-/// Creates and fills /tmp/shv/shv.log.
+/// Creates and fills the final report file (/tmp/shv/shv.log).
 pub fn build(
     dp_shell_history: &Path,
     fp_results: &Path,

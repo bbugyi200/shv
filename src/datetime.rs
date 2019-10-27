@@ -1,3 +1,5 @@
+//! Date and Datetime Utilities
+
 use chrono::prelude::*;
 use chrono::Duration;
 
@@ -7,6 +9,16 @@ use std::process::Command;
 use crate::errors::*;
 
 
+/// Returns a `Duration` instance corresponding to the number of days in a given
+/// month.
+///
+/// # Examples:
+/// ```
+/// assert_eq!(days_in_month(2, 2016), 29);
+/// assert_eq!(days_in_month(2, 2019), 28);
+/// assert_eq!(days_in_month(3, 2019), 31);
+/// assert_eq!(days_in_month(9, 2019), 30);
+/// ```
 pub fn days_in_month(month: u32, year: i32) -> Duration {
     Duration::days(match month {
         2 => {
@@ -30,6 +42,11 @@ pub fn days_in_month(month: u32, year: i32) -> Duration {
 }
 
 
+/// Returns a `Date` instance corresponding to today's date.
+///
+/// # Arguments
+///
+/// * `tz`: A timezone offset (e.g. "-0400")
 pub fn get_today(tz: &str) -> Date<FixedOffset> {
     let utc_time = Utc::now();
     let tz_offset = get_timezone_offset(tz).unwrap();
@@ -46,6 +63,18 @@ fn test_get_today() {
 }
 
 
+/// Returns a timezone offset corresponding to the timezone that you are in.
+///
+/// # Examples:
+///
+/// If your timezone is EST:
+/// ```
+/// assert_eq!(get_timezone(), "-0400");
+/// ```
+/// If your timezone is JST:
+/// ```
+/// assert_eq!(get_timezone(), "0900");
+/// ```
 pub fn get_timezone() -> Result<String> {
     let ps = Command::new("date")
         .arg("+%z")
@@ -62,7 +91,7 @@ fn test_get_timezone() {
 }
 
 
-pub fn get_timezone_offset(tz: &str) -> Result<i32> {
+fn get_timezone_offset(tz: &str) -> Result<i32> {
     Ok(tz.to_string().parse::<i32>()? / 100)
 }
 
@@ -72,6 +101,13 @@ fn test_get_timezone_offset() {
 }
 
 
+/// Takes a datetime string (dts), datetime format (dt_format), and timezone
+/// offset string (e.g. "-0400") and returns a `DateTime` instance.
+///
+/// # Arguments
+/// * `dts`: A datetime string (e.g. "2019-10-27")
+/// * `dt_fmt`: A datetime format string (e.g. "%Y-%m-%d")
+/// * `tz`: A timezone offset (e.g. "-0400")
 pub fn parse_datetime(
     dts: &str,
     dt_fmt: &str,
@@ -83,11 +119,7 @@ pub fn parse_datetime(
     Ok(datetime)
 }
 
-pub fn parse_date(
-    dts: &str,
-    dt_fmt: &str,
-    tz: &str,
-) -> Result<Date<FixedOffset>> {
+fn parse_date(dts: &str, dt_fmt: &str, tz: &str) -> Result<Date<FixedOffset>> {
     Ok(parse_datetime(dts, dt_fmt, tz)?.date())
 }
 
@@ -105,6 +137,21 @@ fn test_parse_date() {
 }
 
 
+/// Constructs and returns a `Date` instance by parsing a date string specified
+/// using the CLI daterange argument.
+///
+/// # Arguments
+/// * `date_spec`: A date specifier. Must match one of the following date
+///   formats:
+///     * %Y-%m-%d
+///     * %Y-%m
+///     * %Y
+///     * %m-%d
+///     * %m
+///     * BOT
+///     * EOT
+///     * [1-9][0-9]*(d|w|m|y)
+/// * `tz`: A timezone offset (e.g. "-0400")
 pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
     let date_spec = date_spec.to_uppercase();
     let today = get_today(tz);
@@ -139,7 +186,7 @@ pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
             fmt_result = format!("{}-01-01", yyyy);
             &fmt_result
         }
-        relative_date if is_match("^[1-9][0-9]*(D|M|W|Y)$", relative_date) => {
+        relative_date if is_match("^[1-9][0-9]*(D|W|M|Y)$", relative_date) => {
             let mut n_string = relative_date.to_string();
             let ch = n_string.pop();
             let n: i64 = n_string.parse().unwrap();
@@ -147,16 +194,16 @@ pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
 
             return Ok(match ch {
                 Some('D') => today - Duration::days(n),
+                Some('W') => {
+                    for _ in 0..n {
+                        rel_date = rel_date - Duration::days(7);
+                    }
+                    rel_date
+                }
                 Some('M') => {
                     for _ in 0..n {
                         rel_date = rel_date
                             - days_in_month(rel_date.month(), rel_date.year());
-                    }
-                    rel_date
-                }
-                Some('W') => {
-                    for _ in 0..n {
-                        rel_date = rel_date - Duration::days(7);
                     }
                     rel_date
                 }

@@ -29,8 +29,8 @@ mod errors {
 }
 use crate::errors::*;
 
-mod datetime;
-mod shr;
+pub mod datetime;
+pub mod shr;
 
 
 fn init_logger(verbose_count: u8) {
@@ -67,19 +67,27 @@ where
         .version("0.1.0")
         .author("Bryan Bugyi <bryanbugyi34@gmail.com>")
         .about("(S)hell (H)istory (V)iewer")
-        // ----- Positional Arguments
+        // ----- ARGUMENTS
         .arg(
             Arg::with_name("regexp").takes_value(true).help(
                 "Filter logs by command string using a regular expression",
             ),
         )
-        // ----- Optional Arguments
+        // ----- FLAGS
         .arg(
             Arg::with_name("all")
                 .short("a")
                 .long("all")
                 .help("Report all matching commands, including duplicates."),
         )
+        .arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .long("verbose")
+                .multiple(true)
+                .help("Increase verbosity level."),
+        )
+        // ----- OPTIONS
         .arg(
             Arg::with_name("daterange")
                 .short("D")
@@ -92,12 +100,13 @@ where
                     "Filter logs by using a daterange of the form \
                      START[:END]. Defaults to parsing all logs. If only the \
                      START date is given, the end range is automatically set \
-                     to \"EOT\" (now). Accepts dates of the form YYYY-MM-DD, \
+                     to \"EOT\". Accepts dates of the form YYYY-MM-DD, \
                      YYYY-MM, YYYY, MM-DD, MM, and the special values \"BOT\" \
-                     and \"EOT\". Lastly, this option will also accept \
-                     arguments of the form: \"Nd\", \"Nw\", \"Nm\" or  \
-                     \"Ny\". These are interpreted as datetimes corresponding \
-                     to N days/weeks/months/years ago.",
+                     (beginning-of-time) and \"EOT\" (end-of-time). Lastly, \
+                     this option will also accept arguments of the form: \
+                     \"Nd\", \"Nw\", \"Nm\" or  \"Ny\". These are interpreted \
+                     as datetimes corresponding to N days/weeks/months/years \
+                     ago.",
                 ),
         )
         .arg(
@@ -106,10 +115,9 @@ where
                 .long("hostname")
                 .takes_value(true)
                 .help(
-                    "Filter logs by the machine's hostname. Defaults to \
-                     hostname of current machine. Accepts special \"ALL\" \
-                     value which results in logs from all known hostnames \
-                     being processed.",
+                    "Filter logs by the machine's hostname. If this option is \
+                     not provided, logs from all known hostnames are \
+                     processed.",
                 ),
         )
         .arg(
@@ -118,13 +126,6 @@ where
                 .long("username")
                 .takes_value(true)
                 .help("Filter logs by username."),
-        )
-        .arg(
-            Arg::with_name("verbose")
-                .short("v")
-                .long("verbose")
-                .multiple(true)
-                .help("Increase verbosity level."),
         )
         .arg(
             Arg::with_name("view_report")
@@ -270,10 +271,10 @@ where
             &mut base_editor_cmd
         };
 
-        editor_cmd
-            .arg(fp_results)
-            .status()
-            .expect(&format!("{} command failed", editor));
+        editor_cmd.arg(fp_results).status().expect(&format!(
+            "Failed to open {:?} using the {} editor.",
+            fp_results, editor
+        ));
     }
 
     Ok(())

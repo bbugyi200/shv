@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::fs;
 use std::io::prelude::*;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -10,7 +11,6 @@ use chrono::prelude::*;
 use regex::Regex;
 
 use crate::datetime;
-use crate::errors::*;
 
 
 fn process_logfile(
@@ -21,7 +21,7 @@ fn process_logfile(
     wdir: Option<&Path>,
     (unique, command_registry): (bool, &mut HashSet<String>),
     check_date: bool,
-) -> Result<Vec<String>> {
+) -> Result<Vec<String>, io::Error> {
     let f_log = fs::File::open(fp_log)?;
     let reader = std::io::BufReader::new(f_log);
 
@@ -53,7 +53,7 @@ fn process_logfile(
 
         let mut maybe_dt = None;
         if check_date {
-            maybe_dt = Some(parse_log_datetime(dts)?);
+            maybe_dt = Some(parse_log_datetime(dts).unwrap());
             let date = maybe_dt.unwrap().date();
             conditions.push(date_start <= date && date <= date_end);
         }
@@ -61,7 +61,7 @@ fn process_logfile(
         if conditions.iter().all(|cond| *cond) {
             let dt = match maybe_dt {
                 Some(datetime) => datetime,
-                None => parse_log_datetime(dts)?,
+                None => parse_log_datetime(dts).unwrap(),
             };
 
             let pretty_line = format!(
@@ -85,7 +85,7 @@ fn process_logfile(
 }
 
 
-fn get_hostname_paths(dp_shell_history: &Path) -> Result<Vec<Box<PathBuf>>> {
+fn get_hostname_paths(dp_shell_history: &Path) -> Result<Vec<Box<PathBuf>>, io::Error> {
     let mut hostname_paths = Vec::new();
     for entry in fs::read_dir(dp_shell_history)? {
         let entry = entry?;
@@ -119,7 +119,7 @@ fn merge_hosts(
     hostname_paths: &Vec<Box<PathBuf>>,
     (year, this_year): (i32, i32),
     (month, this_month): (u32, u32),
-) -> Result<PathBuf> {
+) -> Result<PathBuf, io::Error> {
     let fp_log = PathBuf::from(
         dp_shell_history.join(&format!("ALL/{}/{:02}.log", year, month)),
     );
@@ -179,7 +179,7 @@ pub fn build(
     hostname: &str,
     regexp: Regex,
     unique: bool,
-) -> Result<()> {
+) -> Result<(), io::Error> {
     fs::File::create(fp_results)?.write_all(b"# vim: filetype=shv\n\n")?;
 
     fn date_ym_value(date: Date<FixedOffset>) -> u32 {

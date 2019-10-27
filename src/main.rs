@@ -1,33 +1,16 @@
 //! (S)hell (H)istory (V)iewer
 
 #[macro_use]
-extern crate error_chain;
-
-#[macro_use]
 extern crate log;
 
 
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{exit, Command};
 
 use regex::Regex;
 
-
-mod errors {
-    error_chain! {
-        foreign_links {
-            ChronoParse(chrono::format::ParseError);
-            Io(std::io::Error);
-            FromUtf8(std::string::FromUtf8Error);
-            ParseInt(std::num::ParseIntError);
-            Regex(regex::Error);
-            Var(std::env::VarError);
-        }
-    }
-}
-use crate::errors::*;
 
 pub mod datetime;
 pub mod shr;
@@ -175,7 +158,7 @@ fn test_parse_cli_args() {
 }
 
 
-fn run<I, T>(argv: I) -> Result<()>
+fn run<I, T>(argv: I)
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
@@ -186,43 +169,62 @@ where
     let fp_results = Path::new("/tmp/shv/shv.log");
     let dp_results = fp_results.parent().unwrap();
 
-    fs::create_dir_all(dp_results)?;
+    if let Err(e) = fs::create_dir_all(dp_results) {
+        eprintln!("[ERROR] Failed to create directory {:?}: {}", dp_results, e);
+        exit(1);
+    }
 
     let dp_shell_history = {
-        let shell_history_root = std::env::var("SHV_SHELL_HISTORY_ROOT")?;
+        let shell_history_root = std::env::var("SHV_SHELL_HISTORY_ROOT")
+            .unwrap_or_else(|_| {
+                eprintln!(
+                    "[ERROR] In order to run shv, the SHV_SHELL_HISTORY_ROOT \
+                     environment variable must first be set."
+                );
+                exit(1);
+            });
+
         PathBuf::from(&shell_history_root)
     };
 
-    assert!(
-        dp_shell_history.exists(),
-        "{:?} directory does not exist!",
-        dp_shell_history
-    );
+    if !dp_shell_history.exists() {
+        eprintln!(
+            "[ERROR] The {:?} directory specified by the \
+             SHV_SHELL_HISTORY_ROOT environment variable does not exist.",
+            dp_shell_history
+        );
+        exit(1);
+    }
 
     let wdir = match args.value_of("wdir") {
         Some(dir) => Some(Path::new(dir)),
         None => None,
     };
 
-    let tz = datetime::get_timezone()?;
-    let parse = |dts| datetime::parse_cli_date(dts, &tz);
+    let tz = datetime::get_timezone();
+    let parse = |dts| {
+        datetime::parse_cli_date(dts, &tz).unwrap_or_else(|e| {
+            eprintln!("[ERROR] {}", e);
+            exit(1);
+        })
+    };
     let (date_start, date_end) = match args.values_of("daterange") {
         Some(mut values) => {
             let start = if let Some(dts) = values.next() {
-                parse(dts)?
+                parse(dts)
             } else {
-                parse("BOT")?
+                parse("BOT")
             };
 
             let end = if let Some(dts) = values.next() {
-                parse(dts)?
+                parse(dts)
             } else {
-                parse("EOT")?
+                parse("EOT")
             };
 
             (start, end)
         }
-        None => (parse("BOT")?, parse("EOT")?),
+        None => (parse("BOT"), parse("EOT")),
     };
 
     let hostname = if let Some(hn) = args.value_of("hostname") {
@@ -237,7 +239,14 @@ where
         ".*"
     };
 
-    let regexp = Regex::new(regexp_str).expect("bad regular expession pattern");
+    let regexp = Regex::new(regexp_str).unwrap_or_else(|e| {
+        eprintln!(
+            "[ERROR] There was a problem compiling the regular expression \
+             \"{}\": {}",
+            regexp_str, e
+        );
+        exit(1);
+    });
 
     shr::build(
         &dp_shell_history,
@@ -249,7 +258,9 @@ where
         regexp,
         !args.is_present("all"),
     )
-    .expect("failed to build shv.log");
+    .expect(
+        "An unrecoverable error occurred while building the shv.log report.",
+    );
 
     assert!(
         fp_results.exists(),
@@ -265,20 +276,21 @@ where
 
         let mut base_editor_cmd = Command::new(&editor);
 
-        let editor_cmd = if Regex::new("vim")?.is_match(&editor) {
+        let editor_cmd = if Regex::new("vim").unwrap().is_match(&editor) {
             base_editor_cmd.arg("+")
         } else {
             &mut base_editor_cmd
         };
 
-        editor_cmd.arg(fp_results).status().expect(&format!(
-            "Failed to open {:?} using the {} editor.",
-            fp_results, editor
-        ));
+        editor_cmd.arg(fp_results).status().unwrap_or_else(|e| {
+            eprintln!(
+                "[ERROR] Unable to open {:?} using the {} editor: {}",
+                fp_results, editor, e
+            );
+            exit(1);
+        });
     }
-
-    Ok(())
 }
 
 
-fn main() -> Result<()> { run(std::env::args()) }
+fn main() { run(std::env::args()) }

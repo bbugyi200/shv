@@ -1,12 +1,12 @@
 //! Date and Datetime Utilities
 
-use chrono::prelude::*;
-use chrono::Duration;
-
-use regex::Regex;
+use std::fmt;
 use std::process::Command;
 
-use crate::errors::*;
+use chrono::format::ParseError as ChronoParseError;
+use chrono::prelude::*;
+use chrono::Duration;
+use regex::Regex;
 
 
 /// Returns a `Duration` instance corresponding to the number of days in a given
@@ -75,23 +75,19 @@ fn test_get_today() {
 /// ```
 /// assert_eq!(get_timezone(), "0900");
 /// ```
-pub fn get_timezone() -> Result<String> {
-    let ps = Command::new("date")
-        .arg("+%z")
-        .output()
-        .expect("'date' command failed");
-
-    Ok(String::from_utf8(ps.stdout)?.trim().to_string())
+pub fn get_timezone() -> String {
+    let ps = Command::new("date").arg("+%z").output().unwrap();
+    String::from_utf8(ps.stdout).unwrap().trim().to_string()
 }
 
 #[test]
 #[ignore]
 fn test_get_timezone() {
-    assert_eq!(get_timezone().unwrap(), "-0400");
+    assert_eq!(get_timezone(), "-0400");
 }
 
 
-fn get_timezone_offset(tz: &str) -> Result<i32> {
+fn get_timezone_offset(tz: &str) -> Result<i32, std::num::ParseIntError> {
     Ok(tz.to_string().parse::<i32>()? / 100)
 }
 
@@ -112,14 +108,18 @@ pub fn parse_datetime(
     dts: &str,
     dt_fmt: &str,
     tz: &str,
-) -> Result<DateTime<FixedOffset>> {
+) -> Result<DateTime<FixedOffset>, ChronoParseError> {
     let full_date = format!("{} {}", dts, tz);
     let datetime =
         DateTime::parse_from_str(&full_date, &format!("{} %z", dt_fmt))?;
     Ok(datetime)
 }
 
-fn parse_date(dts: &str, dt_fmt: &str, tz: &str) -> Result<Date<FixedOffset>> {
+fn parse_date(
+    dts: &str,
+    dt_fmt: &str,
+    tz: &str,
+) -> Result<Date<FixedOffset>, ChronoParseError> {
     Ok(parse_datetime(dts, dt_fmt, tz)?.date())
 }
 
@@ -137,6 +137,25 @@ fn test_parse_date() {
 }
 
 
+#[derive(Debug)]
+pub struct CliParseError {
+    emsg: String,
+}
+
+impl CliParseError {
+    fn new(emsg: &str) -> Self {
+        Self {
+            emsg: emsg.to_string(),
+        }
+    }
+}
+
+impl fmt::Display for CliParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.emsg)
+    }
+}
+
 /// Constructs and returns a `Date` instance by parsing a date string specified
 /// using the CLI daterange argument.
 ///
@@ -152,8 +171,11 @@ fn test_parse_date() {
 ///     * EOT
 ///     * [1-9][0-9]*(d|w|m|y)
 /// * `tz`: A timezone offset (e.g. "-0400")
-pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
-    let date_spec = date_spec.to_uppercase();
+pub fn parse_cli_date(
+    date_spec: &str,
+    tz: &str,
+) -> Result<Date<FixedOffset>, CliParseError> {
+    let (orig_date_spec, date_spec) = (date_spec, date_spec.to_uppercase());
     let today = get_today(tz);
 
     let is_match = |pttrn, expr| Regex::new(pttrn).unwrap().is_match(expr);
@@ -217,13 +239,19 @@ pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>> {
             });
         }
         _ => {
-            let emsg = format!("Unsupported date format: {}", date_spec);
-            return Err(emsg.into());
+            return Err(CliParseError::new(&format!(
+                "Unsupported date format: {}",
+                orig_date_spec
+            )));
         }
     };
     trace!("dts = {:?}", dts);
 
-    parse_date(&format!("{} 00:00:00", dts), "%Y-%m-%d %H:%M:%S", tz)
+    Ok(parse_date(
+        &format!("{} 00:00:00", dts),
+        "%Y-%m-%d %H:%M:%S",
+        tz,
+    ).unwrap())
 }
 
 #[test]

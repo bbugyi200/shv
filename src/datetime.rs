@@ -1,12 +1,13 @@
 //! Date and Datetime Utilities
 
-use std::fmt;
 use std::process::Command;
 
 use chrono::format::ParseError as ChronoParseError;
 use chrono::prelude::*;
 use chrono::Duration;
 use regex::Regex;
+
+use crate::errors::ShvError;
 
 
 /// Returns a `Duration` instance corresponding to the number of days in a given
@@ -44,8 +45,7 @@ pub fn days_in_month(month: u32, year: i32) -> Duration {
 
 /// Returns a `Date` instance corresponding to today's date.
 ///
-/// # Arguments
-///
+/// # Arguments:
 /// * `tz`: A timezone offset (e.g. "-0400")
 pub fn get_today(tz: &str) -> Date<FixedOffset> {
     let utc_time = Utc::now();
@@ -100,7 +100,7 @@ fn test_get_timezone_offset() {
 /// Takes a datetime string (dts), datetime format (dt_format), and timezone
 /// offset string (e.g. "-0400") and returns a `DateTime` instance.
 ///
-/// # Arguments
+/// # Arguments:
 /// * `dts`: A datetime string (e.g. "2019-10-27")
 /// * `dt_fmt`: A datetime format string (e.g. "%Y-%m-%d")
 /// * `tz`: A timezone offset (e.g. "-0400")
@@ -114,6 +114,7 @@ pub fn parse_datetime(
         DateTime::parse_from_str(&full_date, &format!("{} %z", dt_fmt))?;
     Ok(datetime)
 }
+
 
 fn parse_date(
     dts: &str,
@@ -137,29 +138,10 @@ fn test_parse_date() {
 }
 
 
-#[derive(Debug)]
-pub struct CliParseError {
-    emsg: String,
-}
-
-impl CliParseError {
-    fn new(emsg: &str) -> Self {
-        Self {
-            emsg: emsg.to_string(),
-        }
-    }
-}
-
-impl fmt::Display for CliParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.emsg)
-    }
-}
-
 /// Constructs and returns a `Date` instance by parsing a date string specified
 /// using the CLI daterange argument.
 ///
-/// # Arguments
+/// # Arguments:
 /// * `date_spec`: A date specifier. Must match one of the following date
 ///   formats:
 ///     * %Y-%m-%d
@@ -171,10 +153,14 @@ impl fmt::Display for CliParseError {
 ///     * EOT
 ///     * [1-9][0-9]*(d|w|m|y)
 /// * `tz`: A timezone offset (e.g. "-0400")
+///
+/// # Errors:
+/// Returns a ShvError if `date_spec` does not match one of the date formats
+/// listed above.
 pub fn parse_cli_date(
     date_spec: &str,
     tz: &str,
-) -> Result<Date<FixedOffset>, CliParseError> {
+) -> Result<Date<FixedOffset>, ShvError> {
     let (orig_date_spec, date_spec) = (date_spec, date_spec.to_uppercase());
     let today = get_today(tz);
 
@@ -239,19 +225,17 @@ pub fn parse_cli_date(
             });
         }
         _ => {
-            return Err(CliParseError::new(&format!(
-                "Unsupported date format: {}",
-                orig_date_spec
-            )));
+            return Err(
+                format!("Unsupported date format: {}", orig_date_spec).into()
+            );
         }
     };
     trace!("dts = {:?}", dts);
 
-    Ok(parse_date(
-        &format!("{} 00:00:00", dts),
-        "%Y-%m-%d %H:%M:%S",
-        tz,
-    ).unwrap())
+    Ok(
+        parse_date(&format!("{} 00:00:00", dts), "%Y-%m-%d %H:%M:%S", tz)
+            .unwrap(),
+    )
 }
 
 #[test]

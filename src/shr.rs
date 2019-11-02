@@ -2,8 +2,8 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -85,7 +85,9 @@ fn process_logfile(
 }
 
 
-fn get_hostname_paths(dp_shell_history: &Path) -> Result<Vec<Box<PathBuf>>, io::Error> {
+fn get_hostname_paths(
+    dp_shell_history: &Path,
+) -> Result<Vec<Box<PathBuf>>, io::Error> {
     let mut hostname_paths = Vec::new();
     for entry in fs::read_dir(dp_shell_history)? {
         let entry = entry?;

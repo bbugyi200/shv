@@ -15,6 +15,25 @@ use regex::Regex;
 pub mod datetime;
 pub mod shr;
 
+pub mod errors {
+    use std::fmt;
+
+    #[derive(Debug)]
+    pub struct ShvError {
+        emsg: String,
+    }
+
+    impl From<String> for ShvError {
+        fn from(emsg: String) -> Self { Self { emsg } }
+    }
+
+    impl fmt::Display for ShvError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{}", self.emsg)
+        }
+    }
+}
+
 
 fn init_logger(verbose_count: u8) {
     let log_level = if let Ok(level) = std::env::var("RUST_LOG") {
@@ -202,7 +221,7 @@ where
     };
 
     let tz = datetime::get_timezone();
-    let parse = |dts| {
+    let parse_cli_date = |dts| {
         datetime::parse_cli_date(dts, &tz).unwrap_or_else(|e| {
             eprintln!("[ERROR] {}", e);
             exit(1);
@@ -211,20 +230,20 @@ where
     let (date_start, date_end) = match args.values_of("daterange") {
         Some(mut values) => {
             let start = if let Some(dts) = values.next() {
-                parse(dts)
+                parse_cli_date(dts)
             } else {
-                parse("BOT")
+                parse_cli_date("BOT")
             };
 
             let end = if let Some(dts) = values.next() {
-                parse(dts)
+                parse_cli_date(dts)
             } else {
-                parse("EOT")
+                parse_cli_date("EOT")
             };
 
             (start, end)
         }
-        None => (parse("BOT"), parse("EOT")),
+        None => (parse_cli_date("BOT"), parse_cli_date("EOT")),
     };
 
     let hostname = if let Some(hn) = args.value_of("hostname") {

@@ -5,7 +5,6 @@ extern crate log;
 
 
 use std::ffi::OsString;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 
@@ -66,13 +65,13 @@ where
     use clap::{App, Arg};
 
     App::new("shv")
-        .version("0.1.0")
+        .version("0.1.1")
         .author("Bryan Bugyi <bryanbugyi34@gmail.com>")
         .about("(S)hell (H)istory (V)iewer")
         // ----- ARGUMENTS
         .arg(
             Arg::with_name("regexp").takes_value(true).help(
-                "Filter logs by command string using a regular expression",
+                "Filter logs by command string using a regular expression.",
             ),
         )
         // ----- FLAGS
@@ -185,13 +184,12 @@ where
     let args = parse_cli_args(argv);
     init_logger(args.occurrences_of("verbose") as u8);
 
-    let fp_results = Path::new("/tmp/shv/shv.log");
-    let dp_results = fp_results.parent().unwrap();
-
-    if let Err(e) = fs::create_dir_all(dp_results) {
-        eprintln!("[ERROR] Failed to create directory {:?}: {}", dp_results, e);
-        exit(1);
-    }
+    let tmp_file = tempfile::Builder::new()
+        .prefix("shv-")
+        .suffix(".log")
+        .tempfile()
+        .unwrap();
+    let fp_results = tmp_file.path();
 
     let dp_shell_history = {
         let shell_history_root = std::env::var("SHV_SHELL_HISTORY_ROOT")

@@ -14,5 +14,5 @@ cp target/release/shv shw.sh ~/.cargo/bin/
 ```
 Then add the following line to your `.zshrc` (or `.bashrc` if you have [bash-preexec](https://github.com/rcaloras/bash-preexec) installed):
 ```
-preexec() { log_shell_history &> /dev/null "$1"; }
+preexec() { shw.sh &> /dev/null "$1"; }
 ```

@@ -65,7 +65,7 @@ where
     use clap::{App, Arg};
 
     App::new("shv")
-        .version("0.1.1")
+        .version("0.1.2")
         .author("Bryan Bugyi <bryanbugyi34@gmail.com>")
         .about("(S)hell (H)istory (V)iewer")
         // ----- ARGUMENTS

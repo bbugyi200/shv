@@ -216,8 +216,10 @@ pub fn parse_cli_date(
                     rel_date
                 }
                 Some('Y') => {
-                    for _ in 0..n {
-                        rel_date = rel_date - Duration::days(365);
+                    let m = n * 12;
+                    for _ in 0..m {
+                        rel_date = rel_date
+                            - days_in_month(rel_date.month(), rel_date.year());
                     }
                     rel_date
                 }

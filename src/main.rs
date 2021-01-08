@@ -195,7 +195,7 @@ where
         let shell_history_root = std::env::var("SHV_SHELL_HISTORY_ROOT")
             .unwrap_or_else(|_| {
                 eprintln!(
-                    "[ERROR] In order to run shv, the SHV_SHELL_HISTORY_ROOT \
+                    "shv: In order to run shv, the SHV_SHELL_HISTORY_ROOT \
                      environment variable must first be set."
                 );
                 exit(1);
@@ -206,7 +206,7 @@ where
 
     if !dp_shell_history.exists() {
         eprintln!(
-            "[ERROR] The {:?} directory specified by the \
+            "shv: The {:?} directory specified by the \
              SHV_SHELL_HISTORY_ROOT environment variable does not exist.",
             dp_shell_history
         );
@@ -221,7 +221,7 @@ where
     let tz = datetime::get_timezone();
     let parse_cli_date = |dts| {
         datetime::parse_cli_date(dts, &tz).unwrap_or_else(|e| {
-            eprintln!("[ERROR] {}", e);
+            eprintln!("shv: {}", e);
             exit(1);
         })
     };
@@ -258,7 +258,7 @@ where
 
     let regexp = Regex::new(regexp_str).unwrap_or_else(|e| {
         eprintln!(
-            "[ERROR] There was a problem compiling the regular expression \
+            "shv: There was a problem compiling the regular expression \
              \"{}\": {}",
             regexp_str, e
         );
@@ -301,7 +301,7 @@ where
 
         editor_cmd.arg(fp_results).status().unwrap_or_else(|e| {
             eprintln!(
-                "[ERROR] Unable to open {:?} using the {} editor: {}",
+                "shv: Unable to open {:?} using the {} editor: {}",
                 fp_results, editor, e
             );
             exit(1);

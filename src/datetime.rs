@@ -291,7 +291,7 @@ fn test_parse_cli_date() {
             } else {
                 false
             },
-            emsg
+            "{}", emsg
         );
     };
 

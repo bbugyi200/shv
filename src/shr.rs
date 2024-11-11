@@ -12,7 +12,6 @@ use regex::Regex;
 
 use crate::datetime;
 
-
 fn process_logfile(
     fp_log: &Path,
     (date_start, date_end, tz): (Date<FixedOffset>, Date<FixedOffset>, &str),
@@ -84,7 +83,6 @@ fn process_logfile(
     Ok(matched_lines)
 }
 
-
 fn get_hostname_paths(
     dp_shell_history: &Path,
 ) -> Result<Vec<Box<PathBuf>>, io::Error> {
@@ -114,7 +112,6 @@ fn test_get_hostname_paths() {
         )))
     );
 }
-
 
 fn merge_hosts(
     dp_shell_history: &Path,
@@ -169,7 +166,6 @@ fn merge_hosts(
 
     Ok(fp_log)
 }
-
 
 /// Creates and fills the final report file (/tmp/shv/shv.log).
 pub fn build(

@@ -3,13 +3,11 @@
 #[macro_use]
 extern crate log;
 
-
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 
 use regex::Regex;
-
 
 pub mod datetime;
 pub mod shr;
@@ -23,7 +21,9 @@ pub mod errors {
     }
 
     impl From<String> for ShvError {
-        fn from(emsg: String) -> Self { Self { emsg } }
+        fn from(emsg: String) -> Self {
+            Self { emsg }
+        }
     }
 
     impl fmt::Display for ShvError {
@@ -32,7 +32,6 @@ pub mod errors {
         }
     }
 }
-
 
 fn init_logger(verbose_count: u8) {
     let log_level = if let Ok(level) = std::env::var("RUST_LOG") {
@@ -55,7 +54,6 @@ fn init_logger(verbose_count: u8) {
         _ => (),
     }
 }
-
 
 fn parse_cli_args<'a, I, T>(argv: I) -> clap::ArgMatches<'a>
 where
@@ -174,7 +172,6 @@ fn test_parse_cli_args() {
     assert_eq!(args.value_of("wdir").unwrap(), "/home/bryan");
     assert_eq!(args.value_of("regexp"), None);
 }
-
 
 fn run<I, T>(argv: I)
 where
@@ -309,5 +306,6 @@ where
     }
 }
 
-
-fn main() { run(std::env::args()) }
+fn main() {
+    run(std::env::args())
+}

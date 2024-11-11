@@ -9,7 +9,6 @@ use regex::Regex;
 
 use crate::errors::ShvError;
 
-
 /// Returns a `Duration` instance corresponding to the number of days in a given
 /// month.
 ///
@@ -42,7 +41,6 @@ pub fn days_in_month(month: u32, year: i32) -> Duration {
     })
 }
 
-
 /// Returns a `Date` instance corresponding to today's date.
 ///
 /// # Arguments:
@@ -61,7 +59,6 @@ fn test_get_today() {
     assert_eq!(get_today("-0400").month(), 10);
     assert_eq!(get_today("-0400").day(), 13);
 }
-
 
 /// Returns a timezone offset corresponding to the timezone that you are in.
 ///
@@ -86,7 +83,6 @@ fn test_get_timezone() {
     assert_eq!(get_timezone(), "-0400");
 }
 
-
 fn get_timezone_offset(tz: &str) -> Result<i32, std::num::ParseIntError> {
     Ok(tz.to_string().parse::<i32>()? / 100)
 }
@@ -95,7 +91,6 @@ fn get_timezone_offset(tz: &str) -> Result<i32, std::num::ParseIntError> {
 fn test_get_timezone_offset() {
     assert_eq!(get_timezone_offset("-0400").unwrap(), -4);
 }
-
 
 /// Takes a datetime string (dts), datetime format (dt_format), and timezone
 /// offset string (e.g. "-0400") and returns a `DateTime` instance.
@@ -114,7 +109,6 @@ pub fn parse_datetime(
         DateTime::parse_from_str(&full_date, &format!("{} %z", dt_fmt))?;
     Ok(datetime)
 }
-
 
 fn parse_date(
     dts: &str,
@@ -136,7 +130,6 @@ fn test_parse_date() {
     let tomorrow = today + Duration::days(1);
     assert_eq!(tomorrow.day(), 2);
 }
-
 
 /// Constructs and returns a `Date` instance by parsing a date string specified
 /// using the CLI daterange argument.
@@ -251,21 +244,35 @@ fn test_parse_cli_date() {
             Err(e) => panic!("[{}]: {:?}", dts, e),
         };
 
-        let emsg = |t, actual, expected| {
-            String::from(format!(
-                "{}: {}[actual({}) != expected({})]",
-                dts, t, actual, expected
-            ))
-        };
-
         let year = date.year();
-        assert!(year == y, emsg("Years", year, y));
+        assert!(
+            year == y,
+            "{}: {}[actual({}) != expected({})]",
+            dts,
+            "Years",
+            year,
+            y
+        );
 
         let month = date.month();
-        assert!(month == m, emsg("Months", month as i32, m as i32));
+        assert!(
+            month == m,
+            "{}: {}[actual({}) != expected({})]",
+            dts,
+            "Months",
+            month as i32,
+            m as i32
+        );
 
         let day = date.day();
-        assert!(day == d, emsg("Days", day as i32, d as i32));
+        assert!(
+            day == d,
+            "{}: {}[actual({}) != expected({})]",
+            dts,
+            "Days",
+            day as i32,
+            d as i32
+        );
     };
 
     assert_ymd("bot", 2017, 1, 1);

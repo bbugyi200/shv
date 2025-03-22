@@ -46,6 +46,7 @@ pub fn days_in_month(month: u32, year: i32) -> Duration {
 /// # Arguments:
 /// * `tz`: A timezone offset (e.g. "-0400")
 pub fn get_today(tz: &str) -> Date<FixedOffset> {
+    let x = 1;
     let utc_time = Utc::now();
     let tz_offset = get_timezone_offset(tz).unwrap();
     let east_tz = FixedOffset::east(tz_offset * 3600);
@@ -105,23 +106,17 @@ pub fn parse_datetime(
     tz: &str,
 ) -> Result<DateTime<FixedOffset>, ChronoParseError> {
     let full_date = format!("{} {}", dts, tz);
-    let datetime =
-        DateTime::parse_from_str(&full_date, &format!("{} %z", dt_fmt))?;
+    let datetime = DateTime::parse_from_str(&full_date, &format!("{} %z", dt_fmt))?;
     Ok(datetime)
 }
 
-fn parse_date(
-    dts: &str,
-    dt_fmt: &str,
-    tz: &str,
-) -> Result<Date<FixedOffset>, ChronoParseError> {
+fn parse_date(dts: &str, dt_fmt: &str, tz: &str) -> Result<Date<FixedOffset>, ChronoParseError> {
     Ok(parse_datetime(dts, dt_fmt, tz)?.date())
 }
 
 #[test]
 fn test_parse_date() {
-    let today = parse_date("2019-10-01 00:00:00", "%Y-%m-%d %H:%M:%S", "-0400")
-        .unwrap();
+    let today = parse_date("2019-10-01 00:00:00", "%Y-%m-%d %H:%M:%S", "-0400").unwrap();
 
     assert_eq!(today.year(), 2019);
     assert_eq!(today.month(), 10);
@@ -150,10 +145,7 @@ fn test_parse_date() {
 /// # Errors:
 /// Returns a ShvError if `date_spec` does not match one of the date formats
 /// listed above.
-pub fn parse_cli_date(
-    date_spec: &str,
-    tz: &str,
-) -> Result<Date<FixedOffset>, ShvError> {
+pub fn parse_cli_date(date_spec: &str, tz: &str) -> Result<Date<FixedOffset>, ShvError> {
     let (orig_date_spec, date_spec) = (date_spec, date_spec.to_uppercase());
     let today = get_today(tz);
 
@@ -167,14 +159,7 @@ pub fn parse_cli_date(
             fmt_result = format!("{}-{}", today.year(), mmdd);
             &fmt_result
         }
-        yyyymmdd
-            if is_match(
-                "^[2-9][0-9]{3}-[0-9][0-9]?-[0-9][0-9]?$",
-                yyyymmdd,
-            ) =>
-        {
-            yyyymmdd
-        }
+        yyyymmdd if is_match("^[2-9][0-9]{3}-[0-9][0-9]?-[0-9][0-9]?$", yyyymmdd) => yyyymmdd,
         yyyymm if is_match("^[2-9][0-9]{3}-[0-9][0-9]?$", yyyymm) => {
             fmt_result = format!("{}-01", yyyymm);
             &fmt_result
@@ -203,16 +188,14 @@ pub fn parse_cli_date(
                 }
                 Some('M') => {
                     for _ in 0..n {
-                        rel_date = rel_date
-                            - days_in_month(rel_date.month(), rel_date.year());
+                        rel_date = rel_date - days_in_month(rel_date.month(), rel_date.year());
                     }
                     rel_date
                 }
                 Some('Y') => {
                     let m = n * 12;
                     for _ in 0..m {
-                        rel_date = rel_date
-                            - days_in_month(rel_date.month(), rel_date.year());
+                        rel_date = rel_date - days_in_month(rel_date.month(), rel_date.year());
                     }
                     rel_date
                 }
@@ -220,17 +203,12 @@ pub fn parse_cli_date(
             });
         }
         _ => {
-            return Err(
-                format!("Unsupported date format: {}", orig_date_spec).into()
-            );
+            return Err(format!("Unsupported date format: {}", orig_date_spec).into());
         }
     };
     trace!("dts = {:?}", dts);
 
-    Ok(
-        parse_date(&format!("{} 00:00:00", dts), "%Y-%m-%d %H:%M:%S", tz)
-            .unwrap(),
-    )
+    Ok(parse_date(&format!("{} 00:00:00", dts), "%Y-%m-%d %H:%M:%S", tz).unwrap())
 }
 
 #[test]
@@ -291,7 +269,8 @@ fn test_parse_cli_date() {
             } else {
                 false
             },
-            "{}", emsg
+            "{}",
+            emsg
         );
     };
 
